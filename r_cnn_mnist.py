@@ -69,7 +69,7 @@ with tf.Session() as sess:
     mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
     tf.summary.FileWriter("logs/", sess.graph)
     last = mnist.train.epochs_completed
-    if mnist.train.epochs_completed < 10000:
+    while mnist.train.epochs_completed < 10000:
         batch = mnist.train.next_batch(50)
         sess.run(train_step, feed_dict={x: batch[0], y: batch[1], 
                                         keep_prob:0.5})
