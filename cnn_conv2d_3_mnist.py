@@ -132,4 +132,4 @@ if __name__ == '__main__':
                 test = accuracy.eval(session = sess,
                                      feed_dict = {x:mnist.test.images, y:mnist.test.labels, keep_prob:1.0})
                 print("epoch {}, train accuracy {}%, dev accuracy {}%, train loss {}%, dev loss {}%".format(
-                        i, round(train_accuracy * 100, 2), round(test * 100, 2), round(lt * 100, 2), round(ld * 100, 2)))
+                        mnist.train.epochs_completed, round(train_accuracy * 100, 2), round(test * 100, 2), round(lt * 100, 2), round(ld * 100, 2)))
