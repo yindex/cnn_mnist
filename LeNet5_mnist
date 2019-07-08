@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+"""
+
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True) #MNIST数据输入
+
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev = 0.1)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape = shape)
+    return tf.Variable(initial)
+
+def conv2d(x, W):
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding = 'VALID')
+
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x, ksize = [1, 2, 2, 1],
+                          strides = [1, 2, 2, 1], padding = 'VALID')
+    
+    
+
+
+x = tf.placeholder(dtype=tf.float32, shape=(None, 784))
+imgs = tf.reshape(x, (-1, 28, 28, 1), "RESHAP")
+y = tf.placeholder(dtype=tf.float32, shape=(None, 10))
+
+c_1_w_1 = weight_variable(shape=(5, 5, 1, 6))
+c_1_b_1 = bias_variable([6])
+
+c_1 = tf.nn.conv2d(input=imgs, filter=c_1_w_1, strides=(1, 1, 1, 1), 
+                   padding="SAME")
+c_1_1 = tf.add(c_1, c_1_b_1)
+
+c_1_out = tf.nn.relu(c_1_1, name="C_1_RELU")    
+c_1_pool = max_pool_2x2(c_1_out)
+
+
+c_2_w_2 = weight_variable(shape=(5, 5, 6, 16))
+c_2_b_2 = bias_variable([16])
+c_2 = tf.nn.conv2d(input=c_1_pool, filter=c_2_w_2, strides=(1,1,1,1),
+                     padding='VALID')
+c_2_2 = tf.add(c_2, c_2_b_2)
+c_2_out = tf.nn.relu(c_2_2)
+
+c_2_pool =  max_pool_2x2(c_2_out)
+
+c_3_w_3 = weight_variable(shape=(5, 5, 16, 120))
+c_3_b_3 = bias_variable(shape=[120])
+
+c_3 = tf.nn.conv2d(input=c_2_pool, filter=c_3_w_3, strides=(1, 1, 1, 1),
+                   padding='VALID')
+c_3_3 = tf.add(c_3, c_3_b_3)
+c_3_out = tf.nn.relu(c_3_3)
+
+f_1_in = tf.reshape(c_3_out, shape=[-1, 120])
+f_1_w_1 = weight_variable(shape=[120])
+f_1_b_1 = bias_variable([120])
+
+f_out = tf.add(tf.multiply(f_1_in, f_1_w_1), f_1_b_1)
+
+
+keep_prob = tf.placeholder("float")
+h_fc1_drop = tf.nn.dropout(f_out, keep_prob)
+
+W_fc2 = weight_variable([120, 10])
+b_fc2 = bias_variable([10])
+
+y_conv = tf.nn.softmax(tf.matmul(f_out, W_fc2) + b_fc2)
+
+
+
+y_ = tf.placeholder("float", [None, 10])
+cross_entropy = -tf.reduce_sum(y_ * tf.log(y_conv)) #计算交叉熵
+
+train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy) 
+correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1)) 
+accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
+
+
+sess = tf.Session() 
+sess.run(tf.initialize_all_variables()) 
+
+
+last = -1
+while mnist.train.epochs_completed < 10:
+    batch = mnist.train.next_batch(50) #batch大小设置为50
+    train_step.run(session = sess, feed_dict = {x:batch[0], y_:batch[1],
+                   keep_prob:0.5}) 
+    
+    if mnist.train.epochs_completed != last:
+        last = mnist.train.epochs_completed
+        train_accuracy = accuracy.eval(session = sess, feed_dict = {x:batch[0], y_:batch[1], keep_prob:1.0})
+        test = accuracy.eval(session = sess, feed_dict = {x:mnist.test.images, y_:mnist.test.labels, keep_prob:1.0})
+        tf.summary.scalar("acc",train_accuracy) 
+        print("Epoch {}, Train Acc {}% Dev Acc {}%".format(mnist.train.epochs_completed, round(train_accuracy * 100, 4), round(test * 100, 4)))
+ 
